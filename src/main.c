@@ -6,6 +6,7 @@
 #include "config.h"
 #include "pbl-math.h"
 #include "sunmoon.h"
+#include "util.h"
 
 /* 
 Because of the way that httpebble works, a different UUID is needed for Android and iOS compatibility. 
@@ -18,7 +19,7 @@ you're building for iOS then remove or comment out that line.
 #define HTTP_COOKIE 4888
 #define FG_COLOR GColorWhite
 #define BG_COLOR GColorBlack
-#define ERROR_CODE 13
+#define ERROR_CODE "unknown"
  
 PBL_APP_INFO(MY_UUID, "Abe's Weather", "VIwebworks", 1, 0,  DEFAULT_MENU_ICON, APP_INFO_WATCH_FACE);
  
@@ -51,7 +52,7 @@ GFont font_cond;
 GFont font_times;
 GFont font_moon;
 char temp_str[5];
-
+/*
 static uint8_t WEATHER_ICONS[] = {
 	RESOURCE_ID_ICON_CHANCEFLURRIES_BLACK,//0
 	RESOURCE_ID_ICON_CHANCESNOW_BLACK,//1
@@ -69,31 +70,80 @@ static uint8_t WEATHER_ICONS[] = {
 	RESOURCE_ID_ICON_UNKNOWN_BLACK,//13
 	RESOURCE_ID_ICON_FOG_BLACK//14
 };
-static uint8_t currenticon = 99;
+static uint8_t currenticon = 99;*/
 BmpContainer icon_layer;
 
 void request_weather();
 void handle_timer(AppContextRef app_ctx, AppTimerHandle handle, uint32_t cookie);
  
 
-void set_icon(uint8_t icon)
+void set_icon(char* icon)
 {
-	if (icon != currenticon)
-	{
+	//text_layer_set_text(&layerUpdated, itoa(icon));
+	//text_layer_set_text(&layer_textTemp, icon);
+	//if (icon != currenticon)
+	//{
 		//unload the icon that's there
-		if (currenticon != 99)
-		{
+		//if (currenticon != 99)
+		//{
 			//need to remove before setting
 			layer_remove_from_parent(&icon_layer.layer.layer);
 			bmp_deinit_container(&icon_layer);
-		}
+		//}
 		//then load one up
-		bmp_init_container(WEATHER_ICONS[icon], &icon_layer);
+		//bmp_init_container(WEATHER_ICONS[icon], &icon_layer);
+	if (strcmp(icon, "0") == 0){
+			bmp_init_container(RESOURCE_ID_ICON_CHANCEFLURRIES_BLACK, &icon_layer);
+			}
+			if (strcmp(icon, "1") == 0 ){
+			bmp_init_container(RESOURCE_ID_ICON_CHANCESNOW_BLACK, &icon_layer);
+			}
+			if (strcmp(icon, "2") == 0 ){
+			bmp_init_container(RESOURCE_ID_ICON_CHANCETSTORMS_BLACK, &icon_layer);
+			}
+			if (strcmp(icon, "3") == 0 ){
+			bmp_init_container(RESOURCE_ID_ICON_CLOUDY_BLACK, &icon_layer);
+			}
+			if (strcmp(icon, "4") == 0 ){
+			bmp_init_container(RESOURCE_ID_ICON_FLURRIES_BLACK, &icon_layer);
+			}
+			if (strcmp(icon, "5") == 0 ){
+			bmp_init_container(RESOURCE_ID_ICON_NT_CHANCEFLURRIES_BLACK, &icon_layer);
+			}
+			if (strcmp(icon, "6") == 0 ){
+			bmp_init_container(RESOURCE_ID_ICON_NT_CHANCESNOW_BLACK, &icon_layer);
+			}
+			if (strcmp(icon, "7") == 0 ){
+			bmp_init_container(RESOURCE_ID_ICON_NT_PARTLYCLOUDY_BLACK, &icon_layer);
+			}
+			if (strcmp(icon, "8") == 0 ){
+			bmp_init_container(RESOURCE_ID_ICON_NT_SUNNY_BLACK, &icon_layer);
+			}
+			if (strcmp(icon, "9") == 0 ){
+			bmp_init_container(RESOURCE_ID_ICON_PARTLYCLOUDY_BLACK, &icon_layer);
+			}
+			if (strcmp(icon, "10") == 0 ){
+			bmp_init_container(RESOURCE_ID_ICON_RAIN_BLACK, &icon_layer);
+			}
+			if (strcmp(icon, "11") == 0 ){
+			bmp_init_container(RESOURCE_ID_ICON_SNOW_BLACK, &icon_layer);
+			}
+			if (strcmp(icon, "12") == 0 ){
+			bmp_init_container(RESOURCE_ID_ICON_SUNNY_BLACK, &icon_layer);
+			}
+			if (strcmp(icon, "13") == 0 ){
+			bmp_init_container(RESOURCE_ID_ICON_UNKNOWN_BLACK, &icon_layer);
+			}
+			if (strcmp(icon, "14") == 0 ){
+			bmp_init_container(RESOURCE_ID_ICON_FOG_BLACK, &icon_layer);
+			}
+	bitmap_layer_set_alignment(&icon_layer.layer, GAlignCenter);
+	bitmap_layer_set_background_color(&icon_layer.layer, GColorClear);
 		layer_add_child(&window.layer, &icon_layer.layer.layer);
 		layer_set_frame(&icon_layer.layer.layer, GRect (35, 0, 70, 70));
 		
-	}
-	currenticon = icon;
+	//}
+	//currenticon = icon;
 }
 void set_timer(AppContextRef ctx) {
 	app_timer_send_event(ctx, 900000, 1);
@@ -188,14 +238,14 @@ void handle_day(AppContextRef ctx, PebbleTickEvent* t)
 
     static char riseText[] = "00:00";
     static char setText[] = "00:00";
-    static char moon1Text[] = "<00:00a\n<00:00a";
-    static char moon2Text[] = "00:00a>\n00:00a>";
+    //static char moon1Text[] = "<00:00a\n<00:00a";
+    //static char moon2Text[] = "00:00a>\n00:00a>";
     static char date[] = "00/00/0000";
     static char moon[] = "m";
     static char moonp[] = "-----";
     float moonphase_number = 0.0;
     int moonphase_letter = 0;
-    float sunrise, sunset, moonrise[3], moonset[3];
+    float sunrise, sunset;//, moonrise[3], moonset[3];
     PblTm* time = t->tick_time;
     if (!t)
         get_time(time);
@@ -360,8 +410,8 @@ void http_success(int32_t request_id, int http_status, DictionaryIterator* recei
   text_layer_set_text(&layer_textError, "");
 	
   Tuple* tuple5 = dict_find(received, 4);
-  set_icon(tuple5->value->uint8);
-	//text_layer_set_text(&layerUpdated, tuple5->value->cstring);
+  set_icon(tuple5->value->cstring);
+  //text_layer_set_text(&layer_textTemp, tuple5->value->cstring);
 }
  
 void http_failure(int32_t request_id, int http_status, void* context) {
