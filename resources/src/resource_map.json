@@ -1,6 +1,11 @@
 {
     "media": [
         {
+            "defName": "IMAGE_MENU_ICON",
+            "type": "png",
+            "file": "images/menuicon.png"
+        },
+        {
             "defName": "ICON_FOG",
             "type": "png-trans",
             "file": "images/fog.png"

@@ -2,6 +2,7 @@
 #include "pebble_app.h"
 #include "pebble_fonts.h"
 #include "http.h"
+#include "httpcapture.h"
 #include "mini-printf.h"
 #include "config.h"
 #include "pbl-math.h"
@@ -20,8 +21,12 @@ you're building for iOS then remove or comment out that line.
 #define FG_COLOR GColorWhite
 #define BG_COLOR GColorBlack
 #define ERROR_CODE "unknown"
- 
-PBL_APP_INFO(MY_UUID, "Abe's Weather", "VIwebworks", 1, 0,  DEFAULT_MENU_ICON, APP_INFO_WATCH_FACE);
+#define WEATHER_KEY_LATITUDE 1
+#define WEATHER_KEY_LONGITUDE 2
+
+#define MAKE_SCREENSHOT 1
+
+PBL_APP_INFO(MY_UUID, "Abe's Weather", "VIwebworks", 1, 0,  RESOURCE_ID_IMAGE_MENU_ICON, APP_INFO_WATCH_FACE);
  
  
 void handle_init(AppContextRef ctx);
@@ -52,30 +57,18 @@ GFont font_cond;
 GFont font_times;
 GFont font_moon;
 char temp_str[5];
-/*
-static uint8_t WEATHER_ICONS[] = {
-	RESOURCE_ID_ICON_CHANCEFLURRIES_BLACK,//0
-	RESOURCE_ID_ICON_CHANCESNOW_BLACK,//1
-	RESOURCE_ID_ICON_CHANCETSTORMS_BLACK,//2
-	RESOURCE_ID_ICON_CLOUDY_BLACK,//3
-	RESOURCE_ID_ICON_FLURRIES_BLACK,//4
-	RESOURCE_ID_ICON_NT_CHANCEFLURRIES_BLACK,//5
-	RESOURCE_ID_ICON_NT_CHANCESNOW_BLACK,//6
-	RESOURCE_ID_ICON_NT_PARTLYCLOUDY_BLACK,//7
-	RESOURCE_ID_ICON_NT_SUNNY_BLACK,//8
-	RESOURCE_ID_ICON_PARTLYCLOUDY_BLACK,//9
-	RESOURCE_ID_ICON_RAIN_BLACK,//10
-	RESOURCE_ID_ICON_SNOW_BLACK,//11
-	RESOURCE_ID_ICON_SUNNY_BLACK,//12
-	RESOURCE_ID_ICON_UNKNOWN_BLACK,//13
-	RESOURCE_ID_ICON_FOG_BLACK//14
-};
-static uint8_t currenticon = 99;*/
+static bool havess = false;
+
+
+static int our_latitude, our_longitude;
+static bool located;
+
 BmpContainer icon_layer;
 
 void request_weather();
 void handle_timer(AppContextRef app_ctx, AppTimerHandle handle, uint32_t cookie);
  
+
 
 void set_icon(char* icon)
 {
@@ -141,7 +134,7 @@ void set_icon(char* icon)
 	bitmap_layer_set_background_color(&icon_layer.layer, GColorClear);
 		layer_add_child(&window.layer, &icon_layer.layer.layer);
 		layer_set_frame(&icon_layer.layer.layer, GRect (35, 0, 70, 70));
-		
+	//bitmap_layer_set_compositing_mode(&icon_layer.layer, GCompOpClear);
 	//}
 	//currenticon = icon;
 }
@@ -149,6 +142,15 @@ void set_timer(AppContextRef ctx) {
 	app_timer_send_event(ctx, 900000, 1);
 }
 
+void location(float latitude, float longitude, float altitude, float accuracy, void* context) {
+	
+	// Fix the floats
+	our_latitude = latitude * 10000;
+	our_longitude = longitude * 10000;
+	located = true;
+	request_weather();
+	set_timer((AppContextRef)context);
+}
 /*Convert decimal hours, into hours and minutes with rounding*/
 int hours(float time)
 {
@@ -310,7 +312,7 @@ void handle_second_tick(AppContextRef ctx, PebbleTickEvent *t)
         string_format_time(day_text, sizeof(day_text), "%A", t->tick_time);
         text_layer_set_text(&day_layer, day_text);
 
-        string_format_time(date_text, sizeof(date_text), "%B %e", t->tick_time);
+        string_format_time(date_text, sizeof(date_text), "%b %e", t->tick_time);
         text_layer_set_text(&date_layer, date_text);
 
     }
@@ -363,6 +365,7 @@ void handle_deinit(AppContextRef ctx)
 void reconnect(void* context) {
 	request_weather();
 }
+
 void pbl_main(void *params) {
   PebbleAppHandlers handlers = {
     .init_handler = &handle_init,
@@ -380,7 +383,15 @@ void pbl_main(void *params) {
         },
 		.timer_handler = handle_timer
   };
- 
+	#if MAKE_SCREENSHOT
+  http_set_app_id(27623);
+  
+  //http_register_callbacks((HTTPCallbacks){ 
+      //.failure = NULL,
+         //}, NULL);
+
+  http_capture_main(&handlers);
+#endif
   app_event_loop(params, &handlers);
 }
  void handle_timer(AppContextRef ctx, AppTimerHandle handle, uint32_t cookie) {
@@ -396,6 +407,13 @@ void http_success(int32_t request_id, int http_status, DictionaryIterator* recei
   }
 	
   Tuple* tuple1 = dict_find(received, 0);
+/*	uint16_t value = tuple1->value->int16;
+	int16_t temp = value & 0x3ff;
+	if(value & 0x400) temp = -temp;
+  static char temp_str[5];
+  memcpy(temp_str, itoa(temp), 4);
+  int degree_pos = strlen(temp_str);
+  memcpy(&temp_str[degree_pos], "°", 3);*/
   text_layer_set_text(&layer_textTemp, tuple1->value->cstring);
  
   Tuple* tuple2 = dict_find(received, 1);
@@ -411,7 +429,11 @@ void http_success(int32_t request_id, int http_status, DictionaryIterator* recei
 	
   Tuple* tuple5 = dict_find(received, 4);
   set_icon(tuple5->value->cstring);
-  //text_layer_set_text(&layer_textTemp, tuple5->value->cstring);
+	if (havess == false)
+	{
+		//http_capture_send(10);
+		havess = true;
+	}
 }
  
 void http_failure(int32_t request_id, int http_status, void* context) {
@@ -420,23 +442,47 @@ void http_failure(int32_t request_id, int http_status, void* context) {
  
 void window_appear(Window* me) {
  
-request_weather();  
+//request_weather();  
 }
-void request_weather() {
+void request_weather() 
+{
+	
+	if(!located) 
+	{
+		http_location_request();
+		return;
+	}
 DictionaryIterator* dict;
-  HTTPResult  result = http_out_get("http://viwebworks.net/weatherpage.aspx", HTTP_COOKIE, &dict);
+	char lat[50];
+	char lon[50];
+	snprintf(lat, sizeof(lat), "%d", our_latitude);
+	snprintf(lon, sizeof(lon), "%d", our_longitude);
+  //text_layer_set_text(&layerUpdated, lat);
+
+  //text_layer_set_text(&layer_textError, lon);
+	char str[200];
+	strcpy(str, "http://viwebworks.net/weatherpage.aspx?lat=");
+	strcat(str, lat);
+	strcat(str, "&lon=");
+	strcat(str, lon);
+  HTTPResult  result = http_out_get(str, HTTP_COOKIE, &dict);
   if (result != HTTP_OK) {
 	  set_icon(ERROR_CODE);
     httpebble_error(result);
     return;
   }
+	dict_write_int32(dict, WEATHER_KEY_LATITUDE, our_latitude);
+	dict_write_int32(dict, WEATHER_KEY_LONGITUDE, our_longitude);
+	
    result = http_out_send();
   if (result != HTTP_OK) {
 	  set_icon(ERROR_CODE);
     httpebble_error(result);
     return;
   }
-} 
+}
+
+
 void line_layer_update_callback(Layer *l, GContext *ctx)
 {
     (void)l;
@@ -444,8 +490,8 @@ void line_layer_update_callback(Layer *l, GContext *ctx)
     graphics_context_set_stroke_color(ctx, FG_COLOR);
     graphics_draw_line(ctx, GPoint(0, 70), GPoint(144, 70));
     graphics_draw_line(ctx, GPoint(0, 71), GPoint(144, 71));
-    graphics_draw_line(ctx, GPoint(0, 118), GPoint(144, 118));
-    graphics_draw_line(ctx, GPoint(0, 119), GPoint(144, 119));
+    graphics_draw_line(ctx, GPoint(0, 113), GPoint(144, 113));
+    graphics_draw_line(ctx, GPoint(0, 114), GPoint(144, 114));
 }
 void handle_init(AppContextRef ctx) {
   http_set_app_id(2147483647);
@@ -461,7 +507,8 @@ void handle_init(AppContextRef ctx) {
   http_register_callbacks((HTTPCallbacks) {
     .success = http_success,
     .failure = http_failure,
-    .reconnect=reconnect
+    .reconnect=reconnect,
+    .location=location
   }, (void*)ctx);
  
   window_init(&window, "Abe's Watchface");
@@ -470,7 +517,8 @@ void handle_init(AppContextRef ctx) {
   window_set_window_handlers(&window, (WindowHandlers){
     .appear  = window_appear
   });
- 
+	
+	
     res_d = resource_get_handle(RESOURCE_ID_FONT_ROBOTO_CONDENSED_20);
     res_t = resource_get_handle(RESOURCE_ID_FONT_ROBOTO_BOLD_SUBSET_41);
     res_te = resource_get_handle(RESOURCE_ID_FONT_FUTURA_TEMP_18);
@@ -483,14 +531,8 @@ void handle_init(AppContextRef ctx) {
     font_times = fonts_load_custom_font(res_ts);
     font_moon = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_MOON_PHASES_SUBSET_24));
 	//output label
-  text_layer_init(&layer_textError, GRect(0, 35, 144, 26));
-  text_layer_set_text_color(&layer_textError, FG_COLOR);
-  text_layer_set_background_color(&layer_textError, GColorClear);
-  text_layer_set_font(&layer_textError, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
-  text_layer_set_text_alignment(&layer_textError, GTextAlignmentCenter);
-  layer_add_child(&window.layer, &layer_textError.layer);
 	
-  text_layer_init(&layer_textTemp, GRect(0, 0, 75, 26));
+  text_layer_init(&layer_textTemp, GRect(5, 0, 75, 26));
   text_layer_set_text_color(&layer_textTemp, FG_COLOR);
   text_layer_set_background_color(&layer_textTemp, GColorClear);
   text_layer_set_font(&layer_textTemp, font_temp);
@@ -504,28 +546,28 @@ void handle_init(AppContextRef ctx) {
   text_layer_set_text_alignment(&layer_textImage, GTextAlignmentRight);
   layer_add_child(&window.layer, &layer_textImage.layer);
 	
-  text_layer_init(&layerUpdated, GRect(0, 50, 75, 20));
+  text_layer_init(&layerUpdated, GRect(2, 53, 75, 20));
   text_layer_set_text_color(&layerUpdated, FG_COLOR);
   text_layer_set_background_color(&layerUpdated, GColorClear);
   text_layer_set_font(&layerUpdated, font_cond);
   text_layer_set_text_alignment(&layerUpdated, GTextAlignmentLeft);
   layer_add_child(&window.layer, &layerUpdated.layer);
  
-  text_layer_init(&layerConditions, GRect(44, 50, 100, 20));
+  text_layer_init(&layerConditions, GRect(44, 53, 99, 20));
   text_layer_set_text_color(&layerConditions, FG_COLOR);
   text_layer_set_background_color(&layerConditions, GColorClear);
   text_layer_set_font(&layerConditions, font_cond);
   text_layer_set_text_alignment(&layerConditions, GTextAlignmentRight);
   layer_add_child(&window.layer, &layerConditions.layer);
 	
-  text_layer_init(&layer_textSRise, GRect(0, 150, 75, 20));
+  text_layer_init(&layer_textSRise, GRect(5, 145, 75, 20));
   text_layer_set_text_color(&layer_textSRise, FG_COLOR);
   text_layer_set_background_color(&layer_textSRise, GColorClear);
   text_layer_set_font(&layer_textSRise, font_cond);
   text_layer_set_text_alignment(&layer_textSRise, GTextAlignmentLeft);
   layer_add_child(&window.layer, &layer_textSRise.layer);
  
-  text_layer_init(&layer_textSSet, GRect(44, 150, 100, 20));
+  text_layer_init(&layer_textSSet, GRect(39, 145, 100, 20));
   text_layer_set_text_color(&layer_textSSet, FG_COLOR);
   text_layer_set_background_color(&layer_textSSet, GColorClear);
   text_layer_set_font(&layer_textSSet, font_cond);
@@ -533,44 +575,51 @@ void handle_init(AppContextRef ctx) {
   layer_add_child(&window.layer, &layer_textSSet.layer);
 	
 	
-    text_layer_init(&day_layer, GRect(0, 123, 144, 33));
+    text_layer_init(&day_layer, GRect(5, 115, 144, 33));
     text_layer_set_font(&day_layer, font_date);
     text_layer_set_text_color(&day_layer, FG_COLOR);
     text_layer_set_background_color(&day_layer, GColorClear);
     text_layer_set_text_alignment(&day_layer, GTextAlignmentLeft);
     layer_add_child(&window.layer, &day_layer.layer);
 
-    text_layer_init(&time_layer, GRect(2, 71, 114, 60));
+    text_layer_init(&time_layer, GRect(5, 66, 114, 60));
     text_layer_set_text_color(&time_layer, FG_COLOR);
     text_layer_set_background_color(&time_layer, GColorClear);
     text_layer_set_font(&time_layer, font_time);
     layer_add_child(&window.layer, &time_layer.layer);
 
-    text_layer_init(&secs_layer, GRect(119, 75, 144-116, 28));
+    text_layer_init(&secs_layer, GRect(119, 70, 144-116, 28));
     text_layer_set_font(&secs_layer, font_date);
     text_layer_set_text_color(&secs_layer, FG_COLOR);
     text_layer_set_background_color(&secs_layer, GColorClear);
     layer_add_child(&window.layer, &secs_layer.layer);
 
-    text_layer_init(&ampm_layer, GRect(116, 94, 144-116, 28));
+    text_layer_init(&ampm_layer, GRect(116, 89, 144-116, 28));
     text_layer_set_font(&ampm_layer, font_date);
     text_layer_set_text_color(&ampm_layer, FG_COLOR);
     text_layer_set_background_color(&ampm_layer, GColorClear);
     layer_add_child(&window.layer, &ampm_layer.layer);
 
-    text_layer_init(&date_layer, GRect(1, 123, 144-1, 168-118));
+    text_layer_init(&date_layer, GRect(1, 115, 144-1, 168-118));
     text_layer_set_font(&date_layer, font_date);
     text_layer_set_text_color(&date_layer, FG_COLOR);
     text_layer_set_background_color(&date_layer, GColorClear);
     text_layer_set_text_alignment(&date_layer, GTextAlignmentRight);
     layer_add_child(&window.layer, &date_layer.layer);
 
-    text_layer_init(&moonPercent, GRect(0, 147, 144, 168-142));
+    text_layer_init(&moonPercent, GRect(0, 142, 144, 168-142));
     text_layer_set_text_color(&moonPercent, FG_COLOR);
     text_layer_set_background_color(&moonPercent, GColorClear);
     text_layer_set_font(&moonPercent, font_moon);
     text_layer_set_text_alignment(&moonPercent, GTextAlignmentCenter);
     layer_add_child(&window.layer, &moonPercent.layer);
+	
+  text_layer_init(&layer_textError, GRect(0, 35, 144, 26));
+  text_layer_set_text_color(&layer_textError, FG_COLOR);
+  text_layer_set_background_color(&layer_textError, GColorClear);
+  text_layer_set_font(&layer_textError, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
+  text_layer_set_text_alignment(&layer_textError, GTextAlignmentCenter);
+  layer_add_child(&window.layer, &layer_textError.layer);
 
     layer_init(&line_layer, window.layer.frame);
     line_layer.update_proc = &line_layer_update_callback;
@@ -580,10 +629,14 @@ void handle_init(AppContextRef ctx) {
     t.tick_time = &tm;
     t.units_changed = SECOND_UNIT | MINUTE_UNIT | HOUR_UNIT | DAY_UNIT;
 
+	located = false;
     handle_second_tick(ctx, &t);
 	handle_day(ctx, &t);
 	set_timer(ctx);
 	
+	#if MAKE_SCREENSHOT
+	http_capture_init(ctx);
+	#endif
 }
  
 void httpebble_error(int error_code) {
