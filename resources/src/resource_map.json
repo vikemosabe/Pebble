@@ -1,84 +1,15 @@
 {
     "media": [
         {
-            "defName": "IMAGE_MENU_ICON",
-            "type": "png",
-            "file": "images/menuicon.png"
+            "characterRegex": "[a-z01]",
+            "defName": "FONT_MOON_PHASES_SUBSET_24",
+            "type": "font",
+            "file": "fonts/moon_phases.ttf"
         },
         {
-            "defName": "ICON_FOG",
-            "type": "png-trans",
-            "file": "images/fog.png"
-        },
-        {
-            "defName": "ICON_UNKNOWN",
-            "type": "png-trans",
-            "file": "images/unknown.png"
-        },
-        {
-            "defName": "ICON_SUNNY",
-            "type": "png-trans",
-            "file": "images/sunny.png"
-        },
-        {
-            "defName": "ICON_SNOW",
-            "type": "png-trans",
-            "file": "images/snow.png"
-        },
-        {
-            "defName": "ICON_RAIN",
-            "type": "png-trans",
-            "file": "images/rain.png"
-        },
-        {
-            "defName": "ICON_PARTLYCLOUDY",
-            "type": "png-trans",
-            "file": "images/partlycloudy.png"
-        },
-        {
-            "defName": "ICON_NT_SUNNY",
-            "type": "png-trans",
-            "file": "images/nt_sunny.png"
-        },
-        {
-            "defName": "ICON_NT_PARTLYCLOUDY",
-            "type": "png-trans",
-            "file": "images/nt_partlycloudy.png"
-        },
-        {
-            "defName": "ICON_NT_CHANCESNOW",
-            "type": "png-trans",
-            "file": "images/nt_chancesnow.png"
-        },
-        {
-            "defName": "ICON_NT_CHANCEFLURRIES",
-            "type": "png-trans",
-            "file": "images/nt_chanceflurries.png"
-        },
-        {
-            "defName": "ICON_FLURRIES",
-            "type": "png-trans",
-            "file": "images/flurries.png"
-        },
-        {
-            "defName": "PIC_FAHR",
-            "type": "png-trans",
-            "file": "images/Fahr.png"
-        },
-        {
-            "defName": "ICON_CLOUDY",
-            "type": "png-trans",
-            "file": "images/cloudy.png"
-        },
-        {
-            "defName": "ICON_CHANCETSTORMS",
-            "type": "png-trans",
-            "file": "images/chancetstorms.png"
-        },
-        {
-            "defName": "ICON_CHANCESNOW",
-            "type": "png-trans",
-            "file": "images/chancesnow.png"
+            "defName": "DUMMY",
+            "type": "raw",
+            "file": "data/resource_map.json"
         },
         {
             "defName": "ICON_CHANCEFLURRIES",
@@ -86,21 +17,74 @@
             "file": "images/chanceflurries.png"
         },
         {
-            "characterRegex": "[a-z01]",
-            "defName": "FONT_MOON_PHASES_SUBSET_24",
-            "type": "font",
-            "file": "fonts/moon_phases.ttf"
+            "defName": "ICON_CHANCESNOW",
+            "type": "png-trans",
+            "file": "images/chancesnow.png"
         },
         {
-            "defName": "FONT_ROBOTO_CONDENSED_20",
-            "type": "font",
-            "file": "fonts/Roboto-Condensed.ttf"
+            "defName": "ICON_CHANCETSTORMS",
+            "type": "png-trans",
+            "file": "images/chancetstorms.png"
         },
         {
-            "characterRegex": "[:0-9]",
-            "defName": "FONT_ROBOTO_BOLD_SUBSET_41",
-            "type": "font",
-            "file": "fonts/Roboto-Bold.ttf"
+            "defName": "ICON_CLOUDY",
+            "type": "png-trans",
+            "file": "images/cloudy.png"
+        },
+        {
+            "defName": "PIC_FAHR",
+            "type": "png-trans",
+            "file": "images/Fahr.png"
+        },
+        {
+            "defName": "ICON_FLURRIES",
+            "type": "png-trans",
+            "file": "images/flurries.png"
+        },
+        {
+            "defName": "ICON_NT_CHANCEFLURRIES",
+            "type": "png-trans",
+            "file": "images/nt_chanceflurries.png"
+        },
+        {
+            "defName": "ICON_NT_CHANCESNOW",
+            "type": "png-trans",
+            "file": "images/nt_chancesnow.png"
+        },
+        {
+            "defName": "ICON_NT_PARTLYCLOUDY",
+            "type": "png-trans",
+            "file": "images/nt_partlycloudy.png"
+        },
+        {
+            "defName": "ICON_NT_SUNNY",
+            "type": "png-trans",
+            "file": "images/nt_sunny.png"
+        },
+        {
+            "defName": "ICON_PARTLYCLOUDY",
+            "type": "png-trans",
+            "file": "images/partlycloudy.png"
+        },
+        {
+            "defName": "ICON_RAIN",
+            "type": "png-trans",
+            "file": "images/rain.png"
+        },
+        {
+            "defName": "ICON_SNOW",
+            "type": "png-trans",
+            "file": "images/snow.png"
+        },
+        {
+            "defName": "ICON_SUNNY",
+            "type": "png-trans",
+            "file": "images/sunny.png"
+        },
+        {
+            "defName": "ICON_UNKNOWN",
+            "type": "png-trans",
+            "file": "images/unknown.png"
         },
         {
             "trackingAdjust": 1,
@@ -120,9 +104,25 @@
             "file": "fonts/futura.ttf"
         },
         {
-            "defName": "DUMMY",
-            "type": "raw",
-            "file": "data/resource_map.json"
+            "characterRegex": "[:0-9]",
+            "defName": "FONT_ROBOTO_BOLD_SUBSET_41",
+            "type": "font",
+            "file": "fonts/Roboto-Bold.ttf"
+        },
+        {
+            "defName": "FONT_ROBOTO_CONDENSED_20",
+            "type": "font",
+            "file": "fonts/Roboto-Condensed.ttf"
+        },
+        {
+            "defName": "ICON_FOG",
+            "type": "png-trans",
+            "file": "images/fog.png"
+        },
+        {
+            "defName": "IMAGE_MENU_ICON",
+            "type": "png",
+            "file": "images/menuicon.png"
         }
     ],
     "friendlyVersion": "VERSION",
